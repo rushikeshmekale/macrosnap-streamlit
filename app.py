@@ -38,20 +38,37 @@ def clean_whatsapp_text(text):
 
 def send_whatsapp(to_number, user_name, summary):
     try:
+        # Make sure numbers have the WhatsApp prefix only once
+        if not to_number.startswith("whatsapp:"):
+            to_number = f"whatsapp:{to_number}"
+
+        if not TWILIO_WHATSAPP_FROM.startswith("whatsapp:"):
+            from_number = f"whatsapp:{TWILIO_WHATSAPP_FROM}"
+        else:
+            from_number = TWILIO_WHATSAPP_FROM
+
         content_variables = json.dumps(
-            {"1": user_name, "2": clean_whatsapp_text(summary)}, ensure_ascii=False
+            {
+                "1": user_name,
+                "2": clean_whatsapp_text(summary)
+            },
+            ensure_ascii=False
         )
+
         message = twilio_client.messages.create(
-            from_=TWILIO_WHATSAPP_FROM,
-            to=f"whatsapp:{to_number}",
+            from_=from_number,
+            to=to_number,
             content_sid=TWILIO_CONTENT_SID,
             content_variables=content_variables,
         )
+
         return True, message.sid
+
     except Exception as error:
-        return False, str(error)
-
-
+        return False, (
+            f"Twilio error: {error} | "
+            f"Type: {type(error).__name__}"
+        )
 
 def render_message(message):
     with st.chat_message(message["role"]):
